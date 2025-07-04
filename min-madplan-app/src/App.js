@@ -1,3 +1,4 @@
+/* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useMemo } from 'react';
 
 // --- Firebase Imports ---
@@ -6,11 +7,18 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, where, getDocs, arrayUnion, setDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously, signInWithCustomToken } from "firebase/auth";
 
-// --- Firebase Configuration & Initialization (RETTET) ---
-// Her læser vi konfigurationen fra de globale variabler, som Canvas-miljøet stiller til rådighed.
-// Dette fjerner fejlen "process is not defined", da vi ikke længere bruger process.env i browseren.
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// --- Firebase Configuration & Initialization (UNIVERSAL) ---
+// Denne opsætning virker både i Canvas-miljøet og i et standard build (som Netlify).
+// Den tjekker først for Canvas-specifikke globale variabler. Hvis de ikke findes,
+// falder den tilbage til at bruge standard React-miljøvariabler (process.env).
+const firebaseConfig = typeof __firebase_config !== 'undefined'
+  ? JSON.parse(__firebase_config)
+  : (process.env.REACT_APP_FIREBASE_CONFIG ? JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG) : {});
+
+const appId = typeof __app_id !== 'undefined'
+  ? __app_id
+  : (process.env.REACT_APP_ID || 'default-app-id');
+
 
 // Vi initialiserer kun Firebase, hvis konfigurationen er tilgængelig, for at undgå fejl.
 const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
