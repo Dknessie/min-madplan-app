@@ -4,20 +4,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 // Importerer de nødvendige funktioner fra Firebase SDK'erne.
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, where, getDocs, arrayUnion, setDoc } from "firebase/firestore";
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously, signInWithCustomToken } from "firebase/auth";
 
-// --- Firebase Configuration & Initialization ---
-// Læser konfigurationen fra Netlify's miljøvariabler.
-// process.env.REACT_APP_FIREBASE_CONFIG er den sikre måde at opbevare nøgler på.
-const firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG || '{}');
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+// --- Firebase Configuration & Initialization (RETTET) ---
+// Her læser vi konfigurationen fra de globale variabler, som Canvas-miljøet stiller til rådighed.
+// Dette fjerner fejlen "process is not defined", da vi ikke længere bruger process.env i browseren.
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-// --- App ID ---
-// Hentes nu direkte fra konfigurationen, så vi har ét samlet sted for nøgler.
-const appId = firebaseConfig.appId || 'default-app-id';
+// Vi initialiserer kun Firebase, hvis konfigurationen er tilgængelig, for at undgå fejl.
+const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
+const db = app ? getFirestore(app) : null;
+const auth = app ? getAuth(app) : null;
+const provider = app ? new GoogleAuthProvider() : null;
 
 
 // --- Ikoner (SVG-komponenter) ---
@@ -350,19 +349,49 @@ export default function App() {
     const [notification, setNotification] = useState(null);
     const [error, setError] = useState('');
 
-    // --- Firebase Auth Håndtering ---
+    // --- Firebase Auth Håndtering (RETTET) ---
+    // Denne useEffect håndterer nu den indledende godkendelse.
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        // Hvis Firebase ikke blev initialiseret korrekt, viser vi en fejl.
+        if (!auth) {
+            setError("Firebase kunne ikke initialiseres. Konfiguration mangler.");
+            setIsLoading(false);
+            return;
+        }
+
+        // Lytter til ændringer i brugerens login-status.
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             setIsLoading(false);
         });
+
+        // Forsøger at logge ind automatisk, når appen starter.
+        const initialSignIn = async () => {
+            try {
+                // Hvis der er et token fra Canvas, bruges det til at logge ind.
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } 
+                // Hvis der ikke er et token og ingen er logget ind, logger vi ind anonymt.
+                else if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Fejl ved automatisk login:", error);
+                setError("Kunne ikke logge ind automatisk.");
+                setIsLoading(false);
+            }
+        };
+
+        initialSignIn();
+
         return () => unsubscribe();
     }, []);
 
     // --- Firebase Data Håndtering ---
     useEffect(() => {
-        if (!user) {
-            // Nulstil data, hvis brugeren logger ud
+        if (!user || !db) {
+            // Nulstil data, hvis brugeren logger ud eller db ikke er klar
             setItems([]);
             setCatalog([]);
             setRecipes([]);
@@ -403,6 +432,7 @@ export default function App() {
     }, [user]);
 
     const handleLogin = async () => {
+        if (!auth || !provider) return;
         setIsLoggingIn(true);
         setError('');
         try {
@@ -420,6 +450,7 @@ export default function App() {
     };
 
     const handleLogout = () => {
+        if (!auth) return;
         signOut(auth).catch((error) => {
             console.error("Logout failed:", error);
             setError("Kunne ikke logge ud.");
@@ -457,7 +488,7 @@ export default function App() {
 
     // --- Lager & Katalog Funktioner ---
     const handleSaveCatalogItem = async (newItemData) => {
-        if (!user) return;
+        if (!user || !db) return;
         try {
             const userCatalogCollection = collection(db, `artifacts/${appId}/users/${user.uid}/catalog`);
             await addDoc(userCatalogCollection, newItemData);
@@ -470,7 +501,7 @@ export default function App() {
     };
 
     const handleUpdateCatalogItem = async (id, updatedData) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = doc(db, `artifacts/${appId}/users/${user.uid}/catalog`, id);
         try {
             await updateDoc(docRef, updatedData);
@@ -482,7 +513,7 @@ export default function App() {
     };
 
     const handleDeleteCatalogItem = async (id) => {
-        if (!user) return;
+        if (!user || !db) return;
         try {
             await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/catalog`, id));
             const q = query(collection(db, `artifacts/${appId}/users/${user.uid}/inventory`), where("catalogId", "==", id));
@@ -499,7 +530,7 @@ export default function App() {
     };
 
     const handleAddStock = async (catalogItem, newBatch) => {
-        if (!user) return;
+        if (!user || !db) return;
         const inventoryCollection = collection(db, `artifacts/${appId}/users/${user.uid}/inventory`);
         const q = query(inventoryCollection, where("catalogId", "==", catalogItem.id));
         
@@ -526,7 +557,7 @@ export default function App() {
     };
     
     const handleCheckout = async () => { 
-        if (!user || cartItems.length === 0) return; 
+        if (!user || !db || cartItems.length === 0) return; 
         
         const updates = new Map();
 
@@ -579,7 +610,7 @@ export default function App() {
     }, [items, cartItems]);
 
     const handleSaveRecipe = async (recipe) => { 
-        if (!user) return;
+        if (!user || !db) return;
         try {
             const recipesCollection = collection(db, `artifacts/${appId}/users/${user.uid}/recipes`);
             await addDoc(recipesCollection, { ...recipe, isFavorite: false, createdAt: new Date().toISOString() });
@@ -589,7 +620,7 @@ export default function App() {
         }
     };
     const handleUpdateRecipe = async (id, recipe) => {
-        if (!user) return;
+        if (!user || !db) return;
         try {
             const recipeDoc = doc(db, `artifacts/${appId}/users/${user.uid}/recipes`, id);
             await updateDoc(recipeDoc, recipe);
@@ -599,7 +630,7 @@ export default function App() {
         }
     };
     const handleToggleFavorite = async (recipeId) => {
-        if (!user) return;
+        if (!user || !db) return;
         const recipe = recipes.find(r => r.id === recipeId);
         if (recipe) {
             const recipeDoc = doc(db, `artifacts/${appId}/users/${user.uid}/recipes`, recipeId);
@@ -703,7 +734,7 @@ export default function App() {
     };
 
     const handleUpdateMealPlan = async (day, planItem) => {
-        if (!user) return;
+        if (!user || !db) return;
         const mealPlanRef = doc(db, `artifacts/${appId}/users/${user.uid}/state/mealPlan`);
         try {
             await setDoc(mealPlanRef, {
@@ -773,6 +804,7 @@ export default function App() {
     }
 
     if (!user) {
+        // Viser Google Login skærmen, hvis automatisk login fejler, og brugeren kan prøve manuelt.
         return <LoginScreen onLogin={handleLogin} isLoggingIn={isLoggingIn} />;
     }
 
@@ -789,7 +821,7 @@ export default function App() {
         <div className="bg-[#FBF9F1] min-h-screen font-body text-stone-700">
             <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
                 <header className="flex justify-between items-center mb-8">
-                    <h1 className="text-4xl sm:text-5xl font-bold text-lime-900 tracking-tight font-heading">{user.displayName}s madplan</h1>
+                    <h1 className="text-4xl sm:text-5xl font-bold text-lime-900 tracking-tight font-heading">{user.isAnonymous ? 'Min Madplan' : `${user.displayName}s madplan`}</h1>
                     <button onClick={handleLogout} className="flex items-center gap-2 text-stone-500 hover:text-lime-700 transition-colors" title="Log ud">
                         <LogOutIcon className="w-6 h-6" />
                         <span className="hidden md:inline">Log ud</span>
@@ -996,7 +1028,7 @@ function HomeView({ setView, shoppingList, setShoppingList, cartItems, expiringI
                 <h2 className="text-3xl font-semibold text-lime-900 mb-4 font-heading">Oversigt</h2>
                 <div className="border border-amber-200 rounded-lg">
                     <div className="border-b border-amber-200">
-                        <nav className="-mb-px flex space-x-6 px-6" aria-label="Tabs">
+                        <nav className="-mb-px flex space-x-6 px-6 overflow-x-auto" aria-label="Tabs">
                             <button onClick={() => setActiveTab('mealPlan')} className={`${activeTab === 'mealPlan' ? 'border-lime-500 text-lime-600' : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
                                 Madplan
                             </button>
