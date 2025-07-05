@@ -7,7 +7,6 @@ import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously, signInWithCustomToken } from "firebase/auth";
 
 // --- React-Bootstrap Imports ---
-// Vi importerer alle de komponenter, vi skal bruge fra React-Bootstrap.
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
@@ -39,7 +38,6 @@ const auth = app ? getAuth(app) : null;
 const provider = app ? new GoogleAuthProvider() : null;
 
 // --- Ikoner (SVG-komponenter) ---
-// Disse er uændrede, da de er rene SVG'er. Vi bruger Bootstrap-klasser eller inline styles til at style dem.
 const TrashIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 const EditIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
 const PlusCircleIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>;
@@ -50,7 +48,7 @@ const BookOpenIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" 
 const ClockIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 const InfoIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>;
 const PlusIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-const StarIcon = ({ className, isFavorite }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+const StarIcon = ({ className, isFavorite }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavorite ? "#ffc107" : "none"} stroke="#ffc107" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
 const SearchIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
 const XIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const ChevronLeftIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"></polyline></svg>;
@@ -352,19 +350,39 @@ export default function App() {
                 .bg-lime-600 { background-color: #65a30d; }
                 .bg-amber-50 { background-color: #fffbeb; }
                 .border-amber-200 { border-color: #fde68a !important; }
-                .card.interactive-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+                .card.interactive-card {
+                    cursor: pointer;
                     transition: all 0.2s ease-in-out;
+                }
+                .card.interactive-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
                     border-color: #a3e635 !important;
                 }
                 .nav-tabs .nav-link.active {
                     color: #4d7c0f;
                     border-color: #a3e635 #a3e635 #FFFCF0;
+                    background-color: #FFFCF0;
                 }
                  .nav-tabs .nav-link {
                     color: #78716c;
-                }
+                 }
+                 .modal-content {
+                    background-color: #FFFCF0;
+                    border: 2px solid #fed7aa;
+                 }
+                 .modal-header {
+                    border-bottom: 1px solid #fed7aa;
+                 }
+                 .recipe-card {
+                    background-color: #FFFCF0;
+                    border: 1px solid #fde68a;
+                    transition: all 0.2s ease-in-out;
+                 }
+                 .recipe-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.10) !important;
+                 }
             `}</style>
             <Container className="py-4">
                 <header className="d-flex justify-content-between align-items-center mb-5">
@@ -375,8 +393,8 @@ export default function App() {
                     </Button>
                 </header>
                 
-                {notification && <Notification {...notification} />}
-                {error && <Alert variant="danger" style={{position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 1050}}>{error}</Alert>}
+                {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
+                {error && <Alert variant="danger" style={{position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 1050}} onClose={() => setError('')} dismissible>{error}</Alert>}
                 
                 {renderContent()}
 
@@ -505,7 +523,7 @@ function HomeView({ setView, shoppingList, setShoppingList, cartItems, expiringI
             </Row>
 
             <Card style={{backgroundColor: '#FFFCF0'}}>
-                <Card.Header>
+                <Card.Header style={{backgroundColor: '#FFFCF0', borderBottom: '1px solid #a3e635'}}>
                     <Nav variant="tabs" defaultActiveKey="mealPlan" onSelect={(k) => setActiveTab(k)}>
                         <Nav.Item><Nav.Link eventKey="mealPlan">Madplan</Nav.Link></Nav.Item>
                         <Nav.Item><Nav.Link eventKey="shoppingList">Indkøbsliste <Badge pill bg="secondary">{shoppingList.length}</Badge></Nav.Link></Nav.Item>
@@ -625,19 +643,343 @@ function CatalogStockItem({ item, onOpenManagementModal, onDelete }) {
     );
 }
 
-// --- Resten af komponenterne (RecipeFormModal, CookbookView, etc.) ville blive konverteret på lignende vis ---
-// For at holde koden overskuelig, er resten af komponenterne udeladt her, men de ville følge samme mønster:
-// - Erstat div/button/etc. med Modal/Card/Button/Form fra react-bootstrap
-// - Erstat className med variant, size, etc. props eller custom styling.
-// Nedenfor er de resterende komponenter, som de var, men de skal konverteres for at virke korrekt.
-// Dette er en pladsholder for at vise, hvor resten af koden ville være.
-function RecipeFormModal({ recipeToEdit, onSave, onUpdate, onDone, catalog }) { return (<div>RecipeFormModal placeholder</div>); }
-function CookbookView({ setView, recipes, catalog, availableItems, onEditRecipeRequest, onAddToKitchenTable, setConfirmationModal, onAddToMealPlanRequest, onShowAddToShoppingListModal, onToggleFavorite, onShowDetailsRequest }) { return (<div>CookbookView placeholder</div>); }
+function RecipeFormModal({ recipeToEdit, onSave, onUpdate, onDone, catalog }) {
+    return (
+        <Modal show={true} onHide={onDone} size="lg" centered backdrop="static">
+            <Modal.Body className="p-0">
+                 <RecipeForm
+                    recipeToEdit={recipeToEdit}
+                    onSave={onSave}
+                    onUpdate={onUpdate}
+                    onDone={onDone}
+                    catalog={catalog}
+                    isModal={true}
+                />
+            </Modal.Body>
+        </Modal>
+    );
+}
+
+function RecipeForm({ catalog, onSave, onUpdate, recipeToEdit, onDone }) {
+    const [name, setName] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [category, setCategory] = useState('Aftensmad');
+    const [prepTime, setPrepTime] = useState('');
+    const [servings, setServings] = useState('');
+    const [ingredients, setIngredients] = useState([{ id: crypto.randomUUID(), name: '', quantity: '', unit: '' }]);
+    const [instructions, setInstructions] = useState('');
+    const [tags, setTags] = useState('');
+    const [notes, setNotes] = useState('');
+    const [importText, setImportText] = useState('');
+
+    useEffect(() => {
+        if (recipeToEdit) {
+            setName(recipeToEdit.name || '');
+            setImageUrl(recipeToEdit.imageUrl || '');
+            setCategory(recipeToEdit.category || 'Aftensmad');
+            setPrepTime(recipeToEdit.prepTime || '');
+            setServings(recipeToEdit.servings || '');
+            setIngredients(recipeToEdit.ingredients.map(ing => ({ ...ing, id: ing.id || crypto.randomUUID() })) || [{ id: crypto.randomUUID(), name: '', quantity: '', unit: '' }]);
+            setInstructions(recipeToEdit.instructions || '');
+            setTags((recipeToEdit.tags || []).join(', '));
+            setNotes(recipeToEdit.notes || '');
+        }
+    }, [recipeToEdit]);
+
+    const handleIngredientChange = (id, field, value) => { setIngredients(prev => prev.map(ing => ing.id === id ? { ...ing, [field]: value } : ing)); };
+    const addIngredient = () => { setIngredients(prev => [...prev, { id: crypto.randomUUID(), name: '', quantity: '', unit: '' }]); };
+    const removeIngredient = (id) => { setIngredients(prev => prev.filter(ing => ing.id !== id)); };
+    const handleImport = () => { const knownUnits = { 'g.': 'g', 'g': 'g', 'gram': 'g', 'kg.': 'kg', 'kg': 'kg', 'kilo': 'kg', 'ml': 'ml', 'dl': 'dl', 'l': 'l', 'liter': 'l', 'stk.': 'stk', 'stk': 'stk', 'ds.': 'dåse', 'ds': 'dåse', 'dåse': 'dåse', 'tsk.': 'tsk', 'tsk': 'tsk', 'spsk.': 'spsk', 'spsk': 'spsk', 'fed': 'fed', 'bundt': 'bundt' }; const unitKeys = Object.keys(knownUnits); const lines = importText.split('\n').filter(line => line.trim() !== ''); const importedIngredients = lines.map(line => { let originalLine = line.trim(); let quantity = ''; let unit = ''; let name = ''; const quantityMatch = originalLine.match(/^(\d+[./,]?\d*)/); if (quantityMatch) { quantity = quantityMatch[0].replace(',', '.'); originalLine = originalLine.substring(quantityMatch[0].length).trim(); } const words = originalLine.split(' '); const firstWord = words[0].toLowerCase(); if (unitKeys.includes(firstWord)) { unit = knownUnits[firstWord]; name = words.slice(1).join(' '); } else { name = originalLine; } name = name.trim(); if (name) { name = name.charAt(0).toUpperCase() + name.slice(1); } return { id: crypto.randomUUID(), name: name, quantity: quantity, unit: unit, }; }); if (importedIngredients.length > 0) { const currentIngredients = ingredients.filter(ing => ing.name || ing.quantity || ing.unit); setIngredients([...currentIngredients, ...importedIngredients]); } setImportText(''); };
+    const handleSubmit = (e) => { e.preventDefault(); const recipeData = { name, imageUrl, category, prepTime: parseInt(prepTime) || 0, servings: parseInt(servings) || 0, ingredients: ingredients.filter(ing => ing.name), instructions, tags: tags.split(',').map(t => t.trim()).filter(t => t), notes, }; if (recipeToEdit) { onUpdate(recipeToEdit.id, recipeData); } else { onSave({...recipeData, isFavorite: false, createdAt: new Date()}); } onDone(); };
+    
+    return (
+        <Card className="border-0">
+            <Card.Header className="d-flex justify-content-between align-items-center">
+                <Card.Title as="h2" className="font-heading text-lime-900 m-0">{recipeToEdit ? 'Rediger Opskrift' : 'Opret ny opskrift'}</Card.Title>
+                 <Button variant="close" onClick={onDone} />
+            </Card.Header>
+            <Card.Body style={{maxHeight: '80vh', overflowY: 'auto'}}>
+                <Form onSubmit={handleSubmit}>
+                    <Row className="g-3">
+                        <Col md={6}><Form.Group><Form.Label>Opskriftnavn</Form.Label><Form.Control type="text" value={name} onChange={e => setName(e.target.value)} required /></Form.Group></Col>
+                        <Col md={6}><Form.Group><Form.Label>Billede URL</Form.Label><Form.Control type="text" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..." /></Form.Group></Col>
+                        <Col md={4}><Form.Group><Form.Label>Kategori</Form.Label><Form.Select value={category} onChange={e => setCategory(e.target.value)}>{['Aftensmad', 'Forret', 'Dessert', 'Bagværk', 'Salat', 'Andet'].map(c => <option key={c}>{c}</option>)}</Form.Select></Form.Group></Col>
+                        <Col md={4}><Form.Group><Form.Label>Tilberedningstid (min)</Form.Label><Form.Control type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="f.eks. 45" /></Form.Group></Col>
+                        <Col md={4}><Form.Group><Form.Label>Antal Portioner</Form.Label><Form.Control type="number" value={servings} onChange={e => setServings(e.target.value)} placeholder="4" /></Form.Group></Col>
+                    </Row>
+
+                    <h3 className="font-heading text-lime-800 mt-4">Ingredienser</h3>
+                    <Card body className="bg-amber-50 border-amber-200 mb-3">
+                        <Form.Label>Importer ingrediensliste</Form.Label>
+                        <Form.Control as="textarea" rows={3} value={importText} onChange={e => setImportText(e.target.value)} placeholder="Indsæt liste her. F.eks. '400g hakket oksekød'" />
+                        <Button variant="warning" size="sm" onClick={handleImport} className="mt-2">Importer</Button>
+                    </Card>
+
+                    <div className="d-grid gap-2 mb-2">
+                        {ingredients.map((ing) => (
+                            <InputGroup key={ing.id}>
+                                <Form.Control type="text" list="catalog-items" placeholder="Ingrediensnavn" value={ing.name} onChange={e => handleIngredientChange(ing.id, 'name', e.target.value)} />
+                                <datalist id="catalog-items">{catalog.map(catItem => <option key={catItem.id} value={catItem.name} />)}</datalist>
+                                <Form.Control type="number" step="any" placeholder="Antal" value={ing.quantity} onChange={e => handleIngredientChange(ing.id, 'quantity', e.target.value)} style={{maxWidth: '80px'}} />
+                                <Form.Control type="text" placeholder="Enhed" value={ing.unit} onChange={e => handleIngredientChange(ing.id, 'unit', e.target.value)} style={{maxWidth: '80px'}} />
+                                <Button variant="outline-danger" onClick={() => removeIngredient(ing.id)}><TrashIcon /></Button>
+                            </InputGroup>
+                        ))}
+                    </div>
+                    <Button variant="link" size="sm" onClick={addIngredient} className="p-0 text-lime-700">+ Tilføj ingrediens</Button>
+
+                    <Form.Group className="mt-4"><Form.Label>Fremgangsmåde</Form.Label><Form.Control as="textarea" rows={8} value={instructions} onChange={e => setInstructions(e.target.value)} /></Form.Group>
+                    <Form.Group className="mt-3"><Form.Label>Tags (separer med komma)</Form.Label><Form.Control type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="f.eks. Hurtig, Vegetarisk, Kylling" /></Form.Group>
+                    <Form.Group className="mt-3"><Form.Label>Noter/Tips</Form.Label><Form.Control as="textarea" rows={3} value={notes} onChange={e => setNotes(e.target.value)} /></Form.Group>
+                    
+                    <div className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <Button variant="secondary" onClick={onDone}>Annuller</Button>
+                        <Button variant="success" type="submit">{recipeToEdit ? 'Gem Ændringer' : 'Gem Opskrift'}</Button>
+                    </div>
+                </Form>
+            </Card.Body>
+        </Card>
+    );
+}
+
+function CookbookView({ setView, recipes, catalog, availableItems, onEditRecipeRequest, onAddToKitchenTable, setConfirmationModal, onAddToMealPlanRequest, onShowAddToShoppingListModal, onToggleFavorite, onShowDetailsRequest }) {
+    const [filter, setFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('name');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const recipesWithStock = useMemo(() => {
+        return recipes.map(recipe => {
+            if (!recipe.ingredients || recipe.ingredients.length === 0) { return { ...recipe, stockMatch: 100 }; }
+            let haveCount = 0; let neededCount = recipe.ingredients.length;
+            recipe.ingredients.forEach(ing => {
+                const catalogItem = catalog.find(c => c.name.toLowerCase() === ing.name.toLowerCase());
+                if (!catalogItem) { neededCount--; return; };
+                const { quantityInBase: requiredQtyInBase } = convertToUnit(parseFloat(ing.quantity) || 0, ing.unit, catalogItem);
+                const inventoryItem = availableItems.find(item => item.catalogId === catalogItem.id);
+                const totalAvailableInBase = inventoryItem ? inventoryItem.totalQuantityInBaseUnit : 0;
+                if (totalAvailableInBase >= requiredQtyInBase) { haveCount++; }
+            });
+            const stockMatch = neededCount > 0 ? (haveCount / neededCount) * 100 : 100;
+            return { ...recipe, stockMatch };
+        });
+    }, [recipes, availableItems, catalog]);
+
+    const filteredAndSortedRecipes = useMemo(() => {
+        let processedRecipes = [...recipesWithStock].filter(recipe => recipe.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        if (filter === 'haveAll') { processedRecipes = processedRecipes.filter(r => r.stockMatch === 100); }
+        processedRecipes.sort((a, b) => {
+            switch (sortBy) {
+                case 'stock': return b.stockMatch - a.stockMatch;
+                case 'favorite': return (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
+                case 'newest': return new Date(b.createdAt) - new Date(a.createdAt);
+                case 'name': default: return a.name.localeCompare(b.name);
+            }
+        });
+        return processedRecipes;
+    }, [recipesWithStock, filter, sortBy, searchTerm]);
+
+    const handleKitchenTableRequest = (recipe) => { setConfirmationModal({ isOpen: true, title: 'Tilføj til Køkkenbord?', message: 'Er du sikker på du vil bruge ingredienserne fra denne opskrift?', onConfirm: () => onAddToKitchenTable(recipe.ingredients) }); };
+
+    return (
+        <div>
+            <Button variant="link" onClick={() => setView('recipesHome')} className="mb-4 p-0 text-lime-700 text-decoration-none"><ArrowLeftIcon /> Tilbage til Opskrifter</Button>
+            <Card style={{backgroundColor: '#FFFCF0'}}>
+                <Card.Header className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <h2 className="font-heading text-lime-900 m-0">Kogebog</h2>
+                    <div className="d-flex flex-wrap align-items-center gap-2">
+                        <InputGroup size="sm"><InputGroup.Text><SearchIcon /></InputGroup.Text><Form.Control placeholder="Søg..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></InputGroup>
+                        <Form.Select size="sm" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">Alle opskrifter</option><option value="haveAll">Har alle varer</option></Form.Select>
+                        <Form.Select size="sm" value={sortBy} onChange={e => setSortBy(e.target.value)}><option value="name">Navn (A-Å)</option><option value="stock">Har flest varer</option><option value="favorite">Favoritter først</option><option value="newest">Nyeste først</option></Form.Select>
+                    </div>
+                </Card.Header>
+                <Card.Body>
+                    {filteredAndSortedRecipes.length === 0 ? (
+                        <div className="text-center py-5 text-muted">
+                            <SearchIcon style={{width: 60, height: 60}} />
+                            <h3 className="mt-3 font-heading">Ingen opskrifter fundet</h3>
+                            <p>Prøv at justere din søgning eller filter.</p>
+                        </div>
+                    ) : (
+                        <Row xs={1} md={2} lg={3} className="g-4">
+                            {filteredAndSortedRecipes.map(recipe => (
+                                <Col key={recipe.id}>
+                                    <RecipeCard recipe={recipe} onEditRecipe={() => onEditRecipeRequest(recipe)} onKitchenTableRequest={() => handleKitchenTableRequest(recipe)} onShowAddToShoppingListModal={() => onShowAddToShoppingListModal(recipe)} onAddToMealPlanRequest={onAddToMealPlanRequest} onToggleFavorite={onToggleFavorite} onShowDetails={() => onShowDetailsRequest(recipe)} />
+                                </Col>
+                            ))}
+                        </Row>
+                    )}
+                </Card.Body>
+            </Card>
+        </div>
+    );
+}
+
+function RecipeCard({ recipe, onEditRecipe, onKitchenTableRequest, onShowAddToShoppingListModal, onAddToMealPlanRequest, onToggleFavorite, onShowDetails }) {
+    return (
+        <Card className="h-100 recipe-card" role="button" onClick={onShowDetails}>
+            <div className="position-relative">
+                <Card.Img variant="top" src={recipe.imageUrl || `https://placehold.co/300x200/eee/ccc?text=${recipe.name.charAt(0)}`} style={{height: '180px', objectFit: 'cover'}} />
+                <Button variant="link" onClick={(e) => {e.stopPropagation(); onToggleFavorite(recipe.id)}} className="position-absolute top-0 end-0 p-2 text-warning">
+                    <StarIcon isFavorite={recipe.isFavorite} />
+                </Button>
+            </div>
+            <Card.Body className="d-flex flex-column">
+                <div className="flex-grow-1">
+                    <Card.Title as="h3" className="font-heading text-lime-900 fs-5">{recipe.name}</Card.Title>
+                    <div className="d-flex justify-content-between text-muted small mb-2">
+                        <span>{recipe.category}</span>
+                        {recipe.prepTime > 0 && <span className="d-flex align-items-center gap-1"><ClockIcon /> {recipe.prepTime} min.</span>}
+                    </div>
+                    <ProgressBar now={recipe.stockMatch} variant="success" style={{height: '8px'}} title={`${Math.round(recipe.stockMatch)}% af varer på lager`} />
+                </div>
+                <div className="d-grid gap-2 mt-3">
+                     <Button variant="outline-success" size="sm" onClick={(e) => {e.stopPropagation(); onAddToMealPlanRequest(recipe)}}>Føj til Madplan</Button>
+                     <Button variant="outline-info" size="sm" onClick={(e) => {e.stopPropagation(); onShowAddToShoppingListModal()}}>Tilføj til Indkøb</Button>
+                     <Button variant="outline-secondary" size="sm" onClick={(e) => {e.stopPropagation(); onEditRecipe()}}>Rediger</Button>
+                </div>
+            </Card.Body>
+        </Card>
+    );
+}
+
 function ConfirmationModal({ show, title, message, onConfirm, onCancel }) { return ( <Modal show={show} onHide={onCancel} centered> <Modal.Header closeButton><Modal.Title className="font-heading">{title}</Modal.Title></Modal.Header> <Modal.Body>{message}</Modal.Body> <Modal.Footer> <Button variant="secondary" onClick={onCancel}>Annuller</Button> <Button variant="success" onClick={onConfirm}>Bekræft</Button> </Modal.Footer> </Modal> ); }
 function SimpleConfirmationModal({ show, title, message, onConfirm, onCancel }) { return ( <Modal show={show} onHide={onCancel} centered> <Modal.Header closeButton><Modal.Title className="font-heading">{title}</Modal.Title></Modal.Header> <Modal.Body>{message}</Modal.Body> <Modal.Footer> <Button variant="secondary" onClick={onCancel}>Annuller</Button> <Button variant="danger" onClick={onConfirm}>Slet</Button> </Modal.Footer> </Modal> ); }
-function Notification({ message, type }) { const variant = type === 'error' ? 'danger' : 'success'; return ( <Alert variant={variant} style={{position: 'fixed', top: 20, right: 20, zIndex: 1050}} dismissible> <InfoIcon className="me-2" /> {message} </Alert> ); }
-function MealPlanView({ mealPlan, onUpdateMealPlan }) { return (<div>MealPlanView placeholder</div>); }
-function AddRecipeToMealPlanModal({ show, recipe, onConfirm, onCancel }) { return (<div>AddRecipeToMealPlanModal placeholder</div>); }
-function AddToShoppingListModal({ show, recipe, onConfirm, onCancel, availableItems, catalog }) { return (<div>AddToShoppingListModal placeholder</div>); }
-function RecipeDetailsModal({ show, recipe, recipeList, onNavigate, onClose }) { return (<div>RecipeDetailsModal placeholder</div>); }
+function Notification({ message, type, onClose }) { const variant = type === 'error' ? 'danger' : 'success'; return ( <Alert variant={variant} style={{position: 'fixed', top: 20, right: 20, zIndex: 1050}} onClose={onClose} dismissible> <InfoIcon className="me-2" /> {message} </Alert> ); }
 
+function MealPlanView({ mealPlan, onUpdateMealPlan }) {
+    const days = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+    const handleRemoveRecipe = (day) => { onUpdateMealPlan(day, null); };
+    const handleAddLeftovers = (day) => { onUpdateMealPlan(day, { recipe: {id: 'leftovers', name: 'Rester'}, servings: 0 }); }
+
+    return (
+        <Row xs={1} sm={2} lg={3} xl={7} className="g-3">
+            {days.map(day => (
+                <Col key={day}>
+                    <Card className="text-center h-100" style={{backgroundColor: '#fffbeb'}}>
+                        <Card.Header className="font-heading fw-bold">{day}</Card.Header>
+                        <Card.Body className="d-flex align-items-center justify-content-center" style={{minHeight: '80px'}}>
+                            {mealPlan[day] ? (
+                                <div>
+                                    <p className={`fw-semibold ${mealPlan[day].recipe.id === 'leftovers' ? 'text-muted' : 'text-lime-800'}`}>{mealPlan[day].recipe.name}</p>
+                                    <Button variant="link" size="sm" className="text-danger p-0" onClick={() => handleRemoveRecipe(day)}>Fjern</Button>
+                                </div>
+                            ) : (
+                                <Button variant="light" size="sm" onClick={() => handleAddLeftovers(day)}><PlusIcon /> Rester</Button>
+                            )}
+                        </Card.Body>
+                    </Card>
+                </Col>
+            ))}
+        </Row>
+    );
+}
+
+function AddRecipeToMealPlanModal({ show, recipe, onConfirm, onCancel }) {
+    const [selectedDay, setSelectedDay] = useState('Mandag');
+    const [servings, setServings] = useState(recipe.servings || 4);
+    const days = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+    const handleSubmit = () => { onConfirm(selectedDay, { recipe, servings: parseInt(servings) || recipe.servings }); };
+
+    return (
+        <Modal show={show} onHide={onCancel} centered>
+            <Modal.Header closeButton><Modal.Title className="font-heading">Føj til Madplan</Modal.Title></Modal.Header>
+            <Modal.Body>
+                <p>Vælg en dag og antal personer for <span className="fw-bold">{recipe.name}</span>.</p>
+                <Form.Group className="mb-3"><Form.Label>Ugedag</Form.Label><Form.Select value={selectedDay} onChange={e => setSelectedDay(e.target.value)}>{days.map(day => <option key={day} value={day}>{day}</option>)}</Form.Select></Form.Group>
+                <Form.Group><Form.Label>Antal personer</Form.Label><Form.Control type="number" value={servings} onChange={e => setServings(e.target.value)} /></Form.Group>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onCancel}>Annuller</Button>
+                <Button variant="success" onClick={handleSubmit}>Tilføj</Button>
+            </Modal.Footer>
+        </Modal>
+    );
+}
+
+function AddToShoppingListModal({ show, recipe, onConfirm, onCancel, availableItems, catalog }) {
+    const [ingredientsToAdd, setIngredientsToAdd] = useState([]);
+    useEffect(() => { const ingredientsWithStock = recipe.ingredients.map(ing => { const catalogItem = catalog.find(c => c.name.toLowerCase() === ing.name.toLowerCase()); const inventoryItem = availableItems.find(item => item.catalogId === catalogItem?.id); const totalAvailableInBase = inventoryItem ? inventoryItem.totalQuantityInBaseUnit : 0; const { displayQuantity, displayUnit } = formatDisplayQuantity(totalAvailableInBase, catalogItem?.baseUnit || 'stk'); return { ...ing, stock: totalAvailableInBase > 0 ? `${displayQuantity} ${displayUnit}` : 'Ingen på lager', }; }); setIngredientsToAdd(ingredientsWithStock); }, [recipe, availableItems, catalog]);
+    const handleRemoveIngredient = (id) => { setIngredientsToAdd(prev => prev.filter(ing => ing.id !== id)); };
+    const handleConfirmClick = () => { onConfirm(ingredientsToAdd); onCancel(); };
+
+    return (
+        <Modal show={show} onHide={onCancel} centered>
+            <Modal.Header closeButton><Modal.Title className="font-heading">Tilføj til Indkøbsliste</Modal.Title></Modal.Header>
+            <Modal.Body>
+                <p>Fjern de varer du allerede har. Resterende tilføjes til din indkøbsliste.</p>
+                <ListGroup style={{maxHeight: '400px', overflowY: 'auto'}}>
+                    {ingredientsToAdd.map(ing => (
+                        <ListGroup.Item key={ing.id} className="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p className="fw-bold mb-0">{ing.name}</p>
+                                <small className="text-muted">{ing.quantity} {ing.unit} <span className="text-success">({ing.stock})</span></small>
+                            </div>
+                            <Button variant="link" className="text-danger" onClick={() => handleRemoveIngredient(ing.id)}><TrashIcon /></Button>
+                        </ListGroup.Item>
+                    ))}
+                </ListGroup>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onCancel}>Annuller</Button>
+                <Button variant="warning" onClick={handleConfirmClick}>Tilføj Valgte</Button>
+            </Modal.Footer>
+        </Modal>
+    );
+}
+
+function RecipeDetailsModal({ show, recipe, recipeList, onNavigate, onClose }) {
+    if (!recipe) return null;
+    const currentIndex = recipeList.findIndex(r => r.id === recipe.id);
+    const hasNext = currentIndex < recipeList.length - 1;
+    const hasPrev = currentIndex > 0;
+    const handlePrev = (e) => { e.stopPropagation(); if (hasPrev) { onNavigate(recipeList[currentIndex - 1]); } };
+    const handleNext = (e) => { e.stopPropagation(); if (hasNext) { onNavigate(recipeList[currentIndex + 1]); } };
+
+    return (
+        <Modal show={show} onHide={onClose} size="lg" centered>
+            <Modal.Header closeButton>
+                <Modal.Title className="font-heading text-lime-900">{recipe.name}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body style={{maxHeight: '80vh', overflowY: 'auto'}}>
+                <Row>
+                    <Col md={6}>
+                        <Image src={recipe.imageUrl || `https://placehold.co/400x300/eee/ccc?text=${recipe.name}`} alt={recipe.name} fluid rounded className="mb-3" />
+                        <div className="d-flex justify-content-between text-muted small mb-3">
+                            <span><strong>Kategori:</strong> {recipe.category}</span>
+                            {recipe.prepTime > 0 && <span className="d-flex align-items-center gap-1"><ClockIcon /> {recipe.prepTime} min.</span>}
+                            {recipe.servings > 0 && <span><strong>Portioner:</strong> {recipe.servings}</span>}
+                        </div>
+                        {recipe.tags && recipe.tags.length > 0 && (
+                            <div className="d-flex flex-wrap gap-2 mb-3">
+                                {recipe.tags.map(tag => <Badge key={tag} pill bg="success-subtle" text="success-emphasis">{tag}</Badge>)}
+                            </div>
+                        )}
+                        {recipe.notes && (
+                            <div>
+                                <h4 className="font-heading">Noter</h4>
+                                <p className="text-muted fst-italic bg-light p-3 rounded">{recipe.notes}</p>
+                            </div>
+                        )}
+                    </Col>
+                    <Col md={6}>
+                        <h3 className="font-heading text-lime-800">Ingredienser</h3>
+                        <ListGroup variant="flush" className="mb-4">
+                            {recipe.ingredients.map((ing, index) => (
+                                <ListGroup.Item key={index} className="d-flex justify-content-between ps-0">
+                                    <span>{ing.name}</span>
+                                    <span className="text-muted">{ing.quantity} {ing.unit}</span>
+                                </ListGroup.Item>
+                            ))}
+                        </ListGroup>
+                        <h3 className="font-heading text-lime-800">Fremgangsmåde</h3>
+                        <div style={{whiteSpace: 'pre-wrap'}}>{recipe.instructions}</div>
+                    </Col>
+                </Row>
+            </Modal.Body>
+            <Modal.Footer className="justify-content-between">
+                <Button variant="secondary" onClick={handlePrev} disabled={!hasPrev}><ChevronLeftIcon /> Forrige</Button>
+                <Button variant="secondary" onClick={handleNext} disabled={!hasNext}>Næste <ChevronRightIcon /></Button>
+            </Modal.Footer>
+        </Modal>
+    );
+}
