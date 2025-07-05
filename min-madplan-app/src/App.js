@@ -21,17 +21,28 @@ import Image from 'react-bootstrap/Image';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import InputGroup from 'react-bootstrap/InputGroup';
 
-// --- Firebase Configuration & Initialization (UNIVERSAL) ---
-const firebaseConfig = typeof __firebase_config !== 'undefined'
-  ? JSON.parse(__firebase_config)
-  : (process.env.REACT_APP_FIREBASE_CONFIG ? JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG) : {});
+// --- Helper function for safer Firebase initialization ---
+const getFirebaseConfig = () => {
+    try {
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            return { config: JSON.parse(__firebase_config), error: null };
+        }
+        if (process.env.REACT_APP_FIREBASE_CONFIG) {
+            return { config: JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG), error: null };
+        }
+        return { config: null, error: "Firebase-konfiguration mangler. Opsæt venligst environment-variabel." };
+    } catch (e) {
+        console.error("Failed to parse Firebase config:", e);
+        return { config: null, error: "Firebase-konfiguration er ugyldig. Tjek din environment-variabel på Netlify." };
+    }
+};
 
-const appId = typeof __app_id !== 'undefined'
-  ? __app_id
-  : (process.env.REACT_APP_ID || 'default-app-id');
-
-const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
+// --- Firebase Configuration & Initialization ---
+const { config: firebaseConfig, error: firebaseError } = getFirebaseConfig();
+const appId = typeof __app_id !== 'undefined' ? __app_id : (process.env.REACT_APP_ID || 'default-app-id');
+const app = firebaseConfig ? initializeApp(firebaseConfig) : null;
 const db = app ? getFirestore(app) : null;
+
 
 // --- Ikoner (SVG-komponenter) ---
 const TrashIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
@@ -422,6 +433,17 @@ export default function App() {
     const lowStockItems = useMemo(() => { return catalog.map(catalogItem => { const inventoryItem = items.find(i => i.catalogId === catalogItem.id); const totalQuantity = inventoryItem ? inventoryItem.batches.reduce((sum, b) => sum + b.quantityInBase, 0) : 0; return { ...catalogItem, totalQuantity }; }).filter(item => item.minStock > 0 && item.totalQuantity < item.minStock); }, [items, catalog]);
 
     // --- UI Rendering ---
+    if (firebaseError) {
+        return (
+            <Container className="d-flex vh-100 justify-content-center align-items-center">
+                <Alert variant="danger">
+                    <Alert.Heading>Konfigurationsfejl</Alert.Heading>
+                    <p>{firebaseError}</p>
+                </Alert>
+            </Container>
+        );
+    }
+
     if (!user) {
         return <LoginScreen onLogin={handleLogin} loginError={loginError} setLoginError={setLoginError} />;
     }
