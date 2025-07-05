@@ -1,11 +1,9 @@
-/* global __firebase_config, __app_id, __initial_auth_token */
+/* global __firebase_config, __app_id */
 import React, { useState, useEffect, useMemo } from 'react';
 
 // --- Firebase Imports ---
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, where, getDocs, arrayUnion, setDoc } from "firebase/firestore";
-// Login-relaterede imports er fjernet midlertidigt
-// import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously, signInWithCustomToken } from "firebase/auth";
 
 // --- React-Bootstrap Imports ---
 import Container from 'react-bootstrap/Container';
@@ -35,17 +33,6 @@ const appId = typeof __app_id !== 'undefined'
 
 const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
 const db = app ? getFirestore(app) : null;
-// const auth = app ? getAuth(app) : null; // Fjernet midlertidigt
-// const provider = app ? new GoogleAuthProvider() : null; // Fjernet midlertidigt
-
-// --- Mock User ---
-// Erstatter den rigtige login-proces, så vi kan fokusere på design.
-const MOCK_USER = {
-  uid: 'mock-user-123',
-  displayName: 'Dig',
-  isAnonymous: false,
-};
-
 
 // --- Ikoner (SVG-komponenter) ---
 const TrashIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
@@ -72,6 +59,9 @@ const JarIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width
 const BottleIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 2h8v2H8z" /><path d="M9 4v12a4 4 0 0 0 4 4h0a4 4 0 0 0 4-4V4" /><path d="M9 8h6" /></svg>;
 const CandyIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v0a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v0z" /><path d="M17 8a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4" /><path d="M17 16a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4" /></svg>;
 const BoxIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>;
+const UserIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+const LogOutIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+
 
 // --- Kategori Data ---
 const CATEGORIES = [
@@ -91,6 +81,84 @@ const CATEGORIES = [
 const unitConversionMap = { g: { base: 'g', factor: 1 }, kg: { base: 'g', factor: 1000 }, ml: { base: 'ml', factor: 1 }, dl: { base: 'ml', factor: 100 }, l: { base: 'ml', factor: 1000 }, stk: { base: 'stk', factor: 1 }, pakke: { base: 'stk', factor: 1 }, dåse: { base: 'stk', factor: 1 }, tsk: { base: 'stk', factor: 1 }, spsk: { base: 'stk', factor: 1 }, fed: { base: 'stk', factor: 1 }, bundt: { base: 'stk', factor: 1 } };
 function convertToUnit(quantity, unit, catalogItem) { if (catalogItem && catalogItem.customConversions) { const customRule = catalogItem.customConversions.find(c => c.fromUnit.toLowerCase() === unit.toLowerCase()); if (customRule) { return { quantityInBase: quantity * customRule.amount, baseUnit: catalogItem.baseUnit }; } } const globalRule = unitConversionMap[unit.toLowerCase()]; if (globalRule) { return { quantityInBase: quantity * globalRule.factor, baseUnit: globalRule.base }; } return { quantityInBase: quantity, baseUnit: unit }; }
 function formatDisplayQuantity(quantityInBase, baseUnit) { const cleanValue = (val) => parseFloat(val.toFixed(2)).toString().replace(/\.00$/, ''); if (baseUnit === 'g') { if (quantityInBase >= 1000) { return { displayQuantity: cleanValue(quantityInBase / 1000), displayUnit: 'kg' }; } return { displayQuantity: cleanValue(quantityInBase), displayUnit: 'g' }; } if (baseUnit === 'ml') { if (quantityInBase >= 1000) { return { displayQuantity: cleanValue(quantityInBase / 1000), displayUnit: 'L' }; } if (quantityInBase >= 100) { return { displayQuantity: cleanValue(quantityInBase / 100), displayUnit: 'dl' }; } return { displayQuantity: cleanValue(quantityInBase), displayUnit: 'ml' }; } return { displayQuantity: cleanValue(quantityInBase), displayUnit: baseUnit }; }
+
+// --- Login Skærm (PIN-kode version) ---
+function LoginScreen({ onLogin, setLoginError, loginError }) {
+    const [showPinModal, setShowPinModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [pin, setPin] = useState('');
+
+    const handleUserSelect = (user) => {
+        setSelectedUser(user);
+        setShowPinModal(true);
+        setLoginError(''); // Nulstil fejl ved nyt forsøg
+    };
+
+    const handlePinSubmit = (e) => {
+        e.preventDefault();
+        onLogin(selectedUser, pin);
+        // Modal lukkes af App-komponenten, hvis login er succesfuldt
+    };
+
+    const handleCloseModal = () => {
+        setShowPinModal(false);
+        setPin('');
+        setLoginError('');
+    }
+
+    const profiles = [
+        { name: 'Frederikke', uid: 'frederikke-123' },
+        { name: 'Christopher', uid: 'christopher-456' }
+    ];
+
+    return (
+        <Container fluid className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '100vh', backgroundColor: '#FBF9F1' }}>
+            <div className="text-center">
+                <h1 className="fw-bold mb-4 font-heading" style={{ color: '#365314', fontSize: '2.8rem' }}>Hvem er du?</h1>
+                <Row>
+                    {profiles.map(profile => (
+                        <Col key={profile.uid} md={6}>
+                            <Card className="text-center p-3 interactive-card" role="button" onClick={() => handleUserSelect(profile)} style={{ backgroundColor: '#FFFCF0' }}>
+                                <Card.Body>
+                                    <UserIcon className="text-lime-700" style={{width: 60, height: 60}} />
+                                    <h2 className="mt-3 font-heading text-lime-800">{profile.name}</h2>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            </div>
+
+            <Modal show={showPinModal} onHide={handleCloseModal} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title className="font-heading">Hej {selectedUser?.name}!</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Indtast venligst din PIN-kode for at fortsætte.</p>
+                    <Form onSubmit={handlePinSubmit}>
+                        <Form.Group>
+                            <Form.Control 
+                                type="password" 
+                                value={pin}
+                                onChange={(e) => setPin(e.target.value)}
+                                placeholder="****"
+                                autoFocus
+                                isInvalid={!!loginError}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {loginError}
+                            </Form.Control.Feedback>
+                        </Form.Group>
+                        <Button variant="success" type="submit" className="w-100 mt-3">
+                            Log ind
+                        </Button>
+                    </Form>
+                </Modal.Body>
+            </Modal>
+        </Container>
+    );
+}
+
 
 // --- MODAL KOMPONENTER (Bootstrap Version) ---
 function ItemManagementModal({ catalogItem, itemToCreate, onSave, onUpdate, onAddStock, onClose }) {
@@ -252,8 +320,9 @@ function ItemManagementModal({ catalogItem, itemToCreate, onSave, onUpdate, onAd
 // --- Hoved App Komponent ---
 export default function App() {
     const [view, setView] = useState('home');
-    const [user, setUser] = useState(MOCK_USER); // Starter med mock-bruger
-    const [isLoading, setIsLoading] = useState(true); // Sættes til false når data er hentet
+    const [user, setUser] = useState(null); // Starter uden bruger
+    const [isLoading, setIsLoading] = useState(false); // Starter uden at loade
+    const [loginError, setLoginError] = useState(''); // Til fejlmeddelelser på login
     const [items, setItems] = useState([]);
     const [catalog, setCatalog] = useState([]);
     const [recipes, setRecipes] = useState([]);
@@ -272,9 +341,13 @@ export default function App() {
 
     // --- Firebase Data Håndtering ---
     useEffect(() => {
-        // Stopper hvis db ikke er klar, eller hvis vi ikke har en bruger (selvom den er mock)
-        if (!db || !user) {
-            setIsLoading(false);
+        if (!user) {
+            // Hvis der ikke er nogen bruger, skal vi ikke hente data.
+            // Nulstil listerne for at sikre, at en tidligere brugers data ikke vises.
+            setItems([]);
+            setCatalog([]);
+            setRecipes([]);
+            setMealPlan({});
             return;
         }
 
@@ -305,12 +378,27 @@ export default function App() {
         });
         unsubscribers.push(unsubMealPlan);
 
-        // Når alle listeners er sat op, er vi færdige med at loade
         setIsLoading(false);
 
-        // Rydder op i listeners, når komponenten forsvinder
         return () => unsubscribers.forEach(unsub => unsub());
-    }, [user]); // Kører kun når 'user' ændres (sker kun én gang ved start med mock-bruger)
+    }, [user]);
+
+    // --- Login/Logout Funktioner ---
+    const handleLogin = (userProfile, pin) => {
+        if (pin === '1406') {
+            setUser({
+                displayName: userProfile.name,
+                uid: userProfile.uid
+            });
+            setLoginError('');
+        } else {
+            setLoginError('Forkert PIN-kode. Prøv igen.');
+        }
+    };
+
+    const handleLogout = () => {
+        setUser(null);
+    };
 
     // --- App Funktioner (Uændret logik) ---
     const showNotification = (message, type = 'success') => { setNotification({message, type}); setTimeout(() => setNotification(null), 3000); };
@@ -336,7 +424,13 @@ export default function App() {
     const lowStockItems = useMemo(() => { return catalog.map(catalogItem => { const inventoryItem = items.find(i => i.catalogId === catalogItem.id); const totalQuantity = inventoryItem ? inventoryItem.batches.reduce((sum, b) => sum + b.quantityInBase, 0) : 0; return { ...catalogItem, totalQuantity }; }).filter(item => item.minStock > 0 && item.totalQuantity < item.minStock); }, [items, catalog]);
 
     // --- UI Rendering ---
-    if (isLoading) { return <div className="d-flex justify-content-center align-items-center vh-100 fs-4 font-heading" style={{color: '#365314'}}>Indlæser...</div>; }
+    if (!user) {
+        return <LoginScreen onLogin={handleLogin} loginError={loginError} setLoginError={setLoginError} />;
+    }
+
+    if (isLoading) { 
+        return <div className="d-flex justify-content-center align-items-center vh-100 fs-4 font-heading" style={{color: '#365314'}}>Indlæser data...</div>; 
+    }
     
     const renderContent = () => {
         switch (view) {
@@ -401,6 +495,9 @@ export default function App() {
             <Container className="py-4">
                 <header className="d-flex justify-content-between align-items-center mb-5">
                     <h1 className="font-heading text-lime-900" style={{fontSize: '2.8rem'}}>{user.displayName}s Madplan</h1>
+                    <Button variant="link" onClick={handleLogout} className="d-flex align-items-center gap-2 text-secondary text-decoration-none">
+                        <LogOutIcon/> Skift bruger
+                    </Button>
                 </header>
                 
                 {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
