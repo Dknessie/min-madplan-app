@@ -14,7 +14,6 @@ import Card from 'react-bootstrap/Card';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Nav from 'react-bootstrap/Nav';
-import Spinner from 'react-bootstrap/Spinner';
 import Alert from 'react-bootstrap/Alert';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Badge from 'react-bootstrap/Badge';
@@ -97,7 +96,6 @@ function LoginScreen({ onLogin, setLoginError, loginError }) {
     const handlePinSubmit = (e) => {
         e.preventDefault();
         onLogin(selectedUser, pin);
-        // Modal lukkes af App-komponenten, hvis login er succesfuldt
     };
 
     const handleCloseModal = () => {
