@@ -21,30 +21,8 @@ import Image from 'react-bootstrap/Image';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import InputGroup from 'react-bootstrap/InputGroup';
 
-// --- Helper function for safer Firebase initialization ---
-const getFirebaseConfig = () => {
-    try {
-        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-            return { config: JSON.parse(__firebase_config), error: null };
-        }
-        if (process.env.REACT_APP_FIREBASE_CONFIG) {
-            return { config: JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG), error: null };
-        }
-        return { config: null, error: "Firebase-konfiguration mangler. Opsæt venligst environment-variabel." };
-    } catch (e) {
-        console.error("Failed to parse Firebase config:", e);
-        return { config: null, error: "Firebase-konfiguration er ugyldig. Tjek din environment-variabel på Netlify." };
-    }
-};
-
-// --- Firebase Configuration & Initialization ---
-const { config: firebaseConfig, error: firebaseError } = getFirebaseConfig();
-const appId = typeof __app_id !== 'undefined' ? __app_id : (process.env.REACT_APP_ID || 'default-app-id');
-const app = firebaseConfig ? initializeApp(firebaseConfig) : null;
-const db = app ? getFirestore(app) : null;
-
-
 // --- Ikoner (SVG-komponenter) ---
+// Note: Alle ikoner ser ud til at være i brug, så ingen er fjernet.
 const TrashIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 const EditIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
 const PlusCircleIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>;
@@ -71,7 +49,6 @@ const CandyIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" wid
 const BoxIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>;
 const UserIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
 const LogOutIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
-
 
 // --- Kategori Data ---
 const CATEGORIES = [
@@ -328,16 +305,22 @@ function ItemManagementModal({ catalogItem, itemToCreate, onSave, onUpdate, onAd
 
 // --- Hoved App Komponent ---
 export default function App() {
+    // --- State Hooks ---
     const [view, setView] = useState('home');
-    const [user, setUser] = useState(null); // Starter uden bruger
-    const [isLoading, setIsLoading] = useState(false); // Starter uden at loade
-    const [loginError, setLoginError] = useState(''); // Til fejlmeddelelser på login
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true); // Start loading immediately
+    const [loginError, setLoginError] = useState('');
+    const [appError, setAppError] = useState(''); // For general app errors, especially Firebase config
+    
+    // --- Data State ---
     const [items, setItems] = useState([]);
     const [catalog, setCatalog] = useState([]);
     const [recipes, setRecipes] = useState([]);
     const [cartItems, setCartItems] = useState([]);
     const [shoppingList, setShoppingList] = useState([]);
     const [mealPlan, setMealPlan] = useState({});
+
+    // --- Modal State ---
     const [itemManagementModal, setItemManagementModal] = useState({ isOpen: false, catalogItem: null, itemToCreate: null });
     const [mealPlanModal, setMealPlanModal] = useState({ isOpen: false, recipe: null });
     const [addToShoppingListModal, setAddToShoppingListModal] = useState({ isOpen: false, recipe: null });
@@ -346,54 +329,106 @@ export default function App() {
     const [confirmationModal, setConfirmationModal] = useState({ isOpen: false });
     const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false });
     const [notification, setNotification] = useState(null);
-    const [error, setError] = useState('');
 
-    // --- Firebase Data Håndtering ---
+    // --- Firebase State ---
+    const [db, setDb] = useState(null);
+    const appId = useMemo(() => typeof __app_id !== 'undefined' ? __app_id : (process.env.REACT_APP_ID || 'default-app-id'), []);
+
+    // --- Firebase Initialization Effect ---
     useEffect(() => {
-        if (!user) {
-            // Hvis der ikke er nogen bruger, skal vi ikke hente data.
-            // Nulstil listerne for at sikre, at en tidligere brugers data ikke vises.
+        // This effect runs only once on component mount to initialize Firebase
+        try {
+            let config = null;
+            // First, try to get config injected by the environment (like Canvas)
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                config = JSON.parse(__firebase_config);
+            } 
+            // Else, try to get it from Netlify's environment variables
+            else if (process.env.REACT_APP_FIREBASE_CONFIG) {
+                config = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
+            }
+
+            if (config) {
+                const app = initializeApp(config);
+                setDb(getFirestore(app));
+                 // We don't stop loading here. We stop when data is fetched.
+            } else {
+                // If no config is found, set an error and stop loading
+                setAppError("Firebase-konfiguration mangler. Gå til Netlify > Site settings > Build & deploy > Environment og tilføj din `REACT_APP_FIREBASE_CONFIG` variabel.");
+                setIsLoading(false);
+            }
+        } catch (e) {
+            console.error("Failed to initialize or parse Firebase config:", e);
+            setAppError("Firebase-konfiguration er ugyldig. Tjek din environment-variabel på Netlify. Den skal være en JSON-streng.");
+            setIsLoading(false);
+        }
+    }, []); // The empty dependency array [] ensures this effect runs only once.
+
+    // --- Firebase Data Fetching Effect ---
+    useEffect(() => {
+        // This effect handles fetching data AFTER Firebase is ready and a user is logged in.
+        
+        // If we don't have a DB connection or a user, do nothing.
+        if (!db || !user) {
+            // Clear data if user logs out or if db connection is lost
             setItems([]);
             setCatalog([]);
             setRecipes([]);
             setMealPlan({});
+            // If there's no user, we are not in a "loading" state.
+            if (!user) setIsLoading(false);
             return;
         }
 
+        // Start loading data for the logged-in user
         setIsLoading(true);
+
         const collectionsToFetch = [
             { name: 'catalog', setter: setCatalog }, 
             { name: 'inventory', setter: setItems }, 
             { name: 'recipes', setter: setRecipes },
         ];
         
+        let initialLoadsPending = collectionsToFetch.length + 1; // +1 for mealPlan
+
+        const checkDoneLoading = () => {
+            initialLoadsPending--;
+            if (initialLoadsPending === 0) {
+                setIsLoading(false);
+            }
+        };
+
         const unsubscribers = collectionsToFetch.map(({ name, setter }) => {
             const userScopedCollection = collection(db, `artifacts/${appId}/users/${user.uid}/${name}`);
             return onSnapshot(userScopedCollection, (querySnapshot) => {
                 const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setter(data);
+                checkDoneLoading();
             }, (err) => {
                 console.error(`Error fetching ${name}:`, err);
-                setError(`Kunne ikke hente ${name}. Tjek dine Firebase-regler.`);
+                setAppError(`Kunne ikke hente '${name}'. Tjek dine Firebase-regler og internetforbindelse.`);
+                setIsLoading(false); // Stop loading on error
             });
         });
 
         const mealPlanRef = doc(db, `artifacts/${appId}/users/${user.uid}/state/mealPlan`);
         const unsubMealPlan = onSnapshot(mealPlanRef, (doc) => {
             setMealPlan(doc.exists() ? doc.data() : {});
+            checkDoneLoading();
         }, (err) => {
             console.error(`Error fetching meal plan:`, err);
-            setError(`Kunne ikke hente madplan.`);
+            setAppError(`Kunne ikke hente madplanen.`);
+            setIsLoading(false); // Stop loading on error
         });
         unsubscribers.push(unsubMealPlan);
 
-        setIsLoading(false);
-
+        // Cleanup function to detach listeners when component unmounts or user/db changes
         return () => unsubscribers.forEach(unsub => unsub());
-    }, [user]);
+    }, [user, db, appId]); // Re-run this effect if the user or db connection changes
 
     // --- Login/Logout Funktioner ---
     const handleLogin = (userProfile, pin) => {
+        // NOTE: This is not secure authentication. For a real app, use Firebase Auth.
         if (pin === '1406') {
             setUser({
                 displayName: userProfile.name,
@@ -409,47 +444,47 @@ export default function App() {
         setUser(null);
     };
 
-    // --- App Funktioner (Uændret logik) ---
+    // --- App Funktioner (Logik er uændret, men nu afhængig af 'db' state) ---
     const showNotification = (message, type = 'success') => { setNotification({message, type}); setTimeout(() => setNotification(null), 3000); };
     const addToCart = (inventoryItem, batch, quantityInBase) => { const cartId = `c-${crypto.randomUUID()}`; const catalogItem = catalog.find(c => c.id === inventoryItem.catalogId); if (!catalogItem) return; const newItem = { cartId, inventoryItemId: inventoryItem.id, batchId: batch.batchId, name: inventoryItem.name, quantityInBase, baseUnit: catalogItem.baseUnit, }; setCartItems(prev => [...prev, newItem]); };
     const removeFromCart = (cartId) => { setCartItems(prev => prev.filter(item => item.cartId !== cartId)); };
     const clearCart = () => { setCartItems([]); };
-    const handleSaveCatalogItem = async (newItemData) => { if (!user || !db) return; try { const userCatalogCollection = collection(db, `artifacts/${appId}/users/${user.uid}/catalog`); await addDoc(userCatalogCollection, newItemData); showNotification(`${newItemData.name} er oprettet i kataloget.`); setItemManagementModal({ isOpen: false, catalogItem: null, itemToCreate: null }); } catch (e) { console.error("Error adding document: ", e); setError("Fejl ved oprettelse af vare."); } };
-    const handleUpdateCatalogItem = async (id, updatedData) => { if (!user || !db) return; const docRef = doc(db, `artifacts/${appId}/users/${user.uid}/catalog`, id); try { await updateDoc(docRef, updatedData); showNotification(`${updatedData.name} er opdateret.`); } catch (e) { console.error("Error updating document: ", e); setError("Fejl ved opdatering af vare."); } };
-    const handleDeleteCatalogItem = async (id) => { if (!user || !db) return; try { await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/catalog`, id)); const q = query(collection(db, `artifacts/${appId}/users/${user.uid}/inventory`), where("catalogId", "==", id)); const querySnapshot = await getDocs(q); querySnapshot.forEach(async (document) => { await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/inventory`, document.id)); }); showNotification("Vare slettet fra kataloget."); setDeleteConfirmation({isOpen: false}); } catch(e) { console.error("Error deleting document: ", e); setError("Fejl ved sletning af vare."); } };
-    const handleAddStock = async (catalogItem, newBatch) => { if (!user || !db) return; const inventoryCollection = collection(db, `artifacts/${appId}/users/${user.uid}/inventory`); const q = query(inventoryCollection, where("catalogId", "==", catalogItem.id)); try { const querySnapshot = await getDocs(q); const newBatchWithId = { ...newBatch, batchId: `b-${crypto.randomUUID()}` }; if (!querySnapshot.empty) { const inventoryDoc = querySnapshot.docs[0]; const docRef = doc(db, `artifacts/${appId}/users/${user.uid}/inventory`, inventoryDoc.id); await updateDoc(docRef, { batches: arrayUnion(newBatchWithId) }); } else { await addDoc(inventoryCollection, { catalogId: catalogItem.id, name: catalogItem.name, batches: [newBatchWithId] }); } showNotification(`Lager for ${catalogItem.name} er opdateret.`); } catch (e) { console.error("Error adding stock: ", e); setError("Fejl ved opdatering af lager."); } };
+    const handleSaveCatalogItem = async (newItemData) => { if (!user || !db) return; try { const userCatalogCollection = collection(db, `artifacts/${appId}/users/${user.uid}/catalog`); await addDoc(userCatalogCollection, newItemData); showNotification(`${newItemData.name} er oprettet i kataloget.`); setItemManagementModal({ isOpen: false, catalogItem: null, itemToCreate: null }); } catch (e) { console.error("Error adding document: ", e); setAppError("Fejl ved oprettelse af vare."); } };
+    const handleUpdateCatalogItem = async (id, updatedData) => { if (!user || !db) return; const docRef = doc(db, `artifacts/${appId}/users/${user.uid}/catalog`, id); try { await updateDoc(docRef, updatedData); showNotification(`${updatedData.name} er opdateret.`); } catch (e) { console.error("Error updating document: ", e); setAppError("Fejl ved opdatering af vare."); } };
+    const handleDeleteCatalogItem = async (id) => { if (!user || !db) return; try { await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/catalog`, id)); const q = query(collection(db, `artifacts/${appId}/users/${user.uid}/inventory`), where("catalogId", "==", id)); const querySnapshot = await getDocs(q); querySnapshot.forEach(async (document) => { await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/inventory`, document.id)); }); showNotification("Vare slettet fra kataloget."); setDeleteConfirmation({isOpen: false}); } catch(e) { console.error("Error deleting document: ", e); setAppError("Fejl ved sletning af vare."); } };
+    const handleAddStock = async (catalogItem, newBatch) => { if (!user || !db) return; const inventoryCollection = collection(db, `artifacts/${appId}/users/${user.uid}/inventory`); const q = query(inventoryCollection, where("catalogId", "==", catalogItem.id)); try { const querySnapshot = await getDocs(q); const newBatchWithId = { ...newBatch, batchId: `b-${crypto.randomUUID()}` }; if (!querySnapshot.empty) { const inventoryDoc = querySnapshot.docs[0]; const docRef = doc(db, `artifacts/${appId}/users/${user.uid}/inventory`, inventoryDoc.id); await updateDoc(docRef, { batches: arrayUnion(newBatchWithId) }); } else { await addDoc(inventoryCollection, { catalogId: catalogItem.id, name: catalogItem.name, batches: [newBatchWithId] }); } showNotification(`Lager for ${catalogItem.name} er opdateret.`); } catch (e) { console.error("Error adding stock: ", e); setAppError("Fejl ved opdatering af lager."); } };
     const handleCheckout = async () => { if (!user || !db || cartItems.length === 0) return; const updates = new Map(); cartItems.forEach(cartItem => { if (!updates.has(cartItem.inventoryItemId)) { const originalItem = items.find(i => i.id === cartItem.inventoryItemId); updates.set(cartItem.inventoryItemId, JSON.parse(JSON.stringify(originalItem))); } const itemToUpdate = updates.get(cartItem.inventoryItemId); const batch = itemToUpdate.batches.find(b => b.batchId === cartItem.batchId); if (batch) { batch.quantityInBase -= cartItem.quantityInBase; } }); for (const [itemId, item] of updates.entries()) { const docRef = doc(db, `artifacts/${appId}/users/${user.uid}/inventory`, itemId); const newBatches = item.batches.filter(b => b.quantityInBase > 0.001); if (newBatches.length > 0) { await updateDoc(docRef, { batches: newBatches }); } else { await deleteDoc(docRef); } } setCartItems([]); showNotification("Lageret er opdateret!"); };
     const availableItems = useMemo(() => { const cartReservations = cartItems.reduce((acc, cartItem) => { const key = `${cartItem.inventoryItemId}-${cartItem.batchId}`; acc[key] = (acc[key] || 0) + cartItem.quantityInBase; return acc; }, {}); return items.map(item => { const newBatches = item.batches.map(batch => { const key = `${item.id}-${batch.batchId}`; const reserved = cartReservations[key] || 0; return { ...batch, quantityInBase: batch.quantityInBase - reserved }; }).filter(batch => batch.quantityInBase > 0.001); if (newBatches.length === 0 && item.batches.length > 0) return null; const totalQuantityInBaseUnit = newBatches.reduce((sum, b) => sum + b.quantityInBase, 0); return { ...item, batches: newBatches, totalQuantityInBaseUnit }; }).filter(Boolean); }, [items, cartItems]);
-    const handleSaveRecipe = async (recipe) => { if (!user || !db) return; try { const recipesCollection = collection(db, `artifacts/${appId}/users/${user.uid}/recipes`); await addDoc(recipesCollection, { ...recipe, isFavorite: false, createdAt: new Date().toISOString() }); setEditingRecipeModal({ isOpen: false, recipe: null }); } catch(e) { setError("Fejl ved oprettelse af opskrift."); } };
-    const handleUpdateRecipe = async (id, recipe) => { if (!user || !db) return; try { const recipeDoc = doc(db, `artifacts/${appId}/users/${user.uid}/recipes`, id); await updateDoc(recipeDoc, recipe); setEditingRecipeModal({ isOpen: false, recipe: null }); } catch(e) { setError("Fejl ved opdatering af opskrift."); } };
+    const handleSaveRecipe = async (recipe) => { if (!user || !db) return; try { const recipesCollection = collection(db, `artifacts/${appId}/users/${user.uid}/recipes`); await addDoc(recipesCollection, { ...recipe, isFavorite: false, createdAt: new Date().toISOString() }); setEditingRecipeModal({ isOpen: false, recipe: null }); } catch(e) { setAppError("Fejl ved oprettelse af opskrift."); } };
+    const handleUpdateRecipe = async (id, recipe) => { if (!user || !db) return; try { const recipeDoc = doc(db, `artifacts/${appId}/users/${user.uid}/recipes`, id); await updateDoc(recipeDoc, recipe); setEditingRecipeModal({ isOpen: false, recipe: null }); } catch(e) { setAppError("Fejl ved opdatering af opskrift."); } };
     const handleToggleFavorite = async (recipeId) => { if (!user || !db) return; const recipe = recipes.find(r => r.id === recipeId); if (recipe) { const recipeDoc = doc(db, `artifacts/${appId}/users/${user.uid}/recipes`, recipeId); await updateDoc(recipeDoc, { isFavorite: !recipe.isFavorite }); } };
     const handleAddItemsToShoppingList = (ingredients) => { const newShoppingList = [...shoppingList]; ingredients.forEach(ing => { const catalogItem = catalog.find(c => c.name.toLowerCase() === ing.name.toLowerCase()); const { quantityInBase, baseUnit } = convertToUnit(parseFloat(ing.quantity) || 0, ing.unit, catalogItem); const existingIndex = newShoppingList.findIndex(item => item.name === ing.name && (!item.baseUnit || item.baseUnit === baseUnit)); if (existingIndex > -1) { newShoppingList[existingIndex].quantityInBase += quantityInBase; const { displayQuantity, displayUnit } = formatDisplayQuantity(newShoppingList[existingIndex].quantityInBase, newShoppingList[existingIndex].baseUnit); newShoppingList[existingIndex].quantity = displayQuantity; newShoppingList[existingIndex].unit = displayUnit; } else { newShoppingList.push({ id: crypto.randomUUID(), name: ing.name, quantityInBase, baseUnit, quantity: ing.quantity, unit: ing.unit }); } }); setShoppingList(newShoppingList); showNotification(`${ingredients.length} ingrediens(er) tilføjet til indkøbslisten!`); };
     const handleAddRecipeToKitchenTable = (ingredients) => { let itemsAddedCount = 0; ingredients.forEach(ing => { const catalogItem = catalog.find(c => c.name.toLowerCase() === ing.name.toLowerCase()); if (!catalogItem) return; const inventoryItem = availableItems.find(item => item.catalogId === catalogItem.id); if (!inventoryItem) return; const { quantityInBase: requiredQty } = convertToUnit(parseFloat(ing.quantity) || 0, ing.unit, catalogItem); let remainingRequiredQty = requiredQty; const sortedBatches = [...inventoryItem.batches].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate)); for (const batch of sortedBatches) { if (remainingRequiredQty <= 0) break; const qtyToTake = Math.min(batch.quantityInBase, remainingRequiredQty); addToCart(inventoryItem, batch, qtyToTake); remainingRequiredQty -= qtyToTake; } if(requiredQty > 0 && requiredQty - remainingRequiredQty > 0) { itemsAddedCount++; } }); if (itemsAddedCount > 0) { showNotification(`${itemsAddedCount} ingrediens(er) tilføjet til køkkenbordet.`); } };
     const executeShoppingListConfirmation = () => { if (shoppingList.length === 0) return; const oneWeekFromNow = new Date(); oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7); const defaultExpiry = oneWeekFromNow.toISOString().slice(0, 10); shoppingList.forEach(item => { const catalogItem = catalog.find(c => c.name.toLowerCase() === item.name.toLowerCase()); if (catalogItem) { const { quantityInBase } = convertToUnit(parseFloat(item.quantity) || 0, item.unit, catalogItem); const newBatch = { quantityInBase, price: 0, expiryDate: defaultExpiry, purchaseDate: new Date().toISOString().slice(0, 10), location: catalogItem.defaultLocation || 'Køleskab' }; handleAddStock(catalogItem, newBatch); } }); setShoppingList([]); showNotification("Indkøb bekræftet og varer lagt på lager!"); };
-    const handleConfirmShoppingListClick = () => { const itemsWithoutCatalogCard = shoppingList.filter(item => !catalog.some(c => c.name.toLowerCase() === item.name.toLowerCase())); if (itemsWithoutCatalogCard.length > 0) { setError(`Opret venligst varekort for: ${itemsWithoutCatalogCard.map(i => i.name).join(', ')}.`); setTimeout(() => setError(''), 5000); return; } if (shoppingList.length > 0) { setConfirmationModal({ isOpen: true, title: 'Bekræft Indkøb?', message: `Vil du tilføje ${shoppingList.length} vare(r) til lageret?`, onConfirm: executeShoppingListConfirmation }); } };
-    const handleUpdateMealPlan = async (day, planItem) => { if (!user || !db) return; const mealPlanRef = doc(db, `artifacts/${appId}/users/${user.uid}/state/mealPlan`); try { await setDoc(mealPlanRef, { ...mealPlan, [day]: planItem }, { merge: true }); if (planItem && planItem.recipe.id !== 'leftovers') { showNotification(`${planItem.recipe.name} er tilføjet til madplanen for ${day}.`); } } catch (e) { console.error("Error updating meal plan:", e); setError("Kunne ikke opdatere madplan."); } setMealPlanModal({ isOpen: false, recipe: null }); };
+    const handleConfirmShoppingListClick = () => { const itemsWithoutCatalogCard = shoppingList.filter(item => !catalog.some(c => c.name.toLowerCase() === item.name.toLowerCase())); if (itemsWithoutCatalogCard.length > 0) { setAppError(`Opret venligst varekort for: ${itemsWithoutCatalogCard.map(i => i.name).join(', ')}.`); setTimeout(() => setAppError(''), 5000); return; } if (shoppingList.length > 0) { setConfirmationModal({ isOpen: true, title: 'Bekræft Indkøb?', message: `Vil du tilføje ${shoppingList.length} vare(r) til lageret?`, onConfirm: executeShoppingListConfirmation }); } };
+    const handleUpdateMealPlan = async (day, planItem) => { if (!user || !db) return; const mealPlanRef = doc(db, `artifacts/${appId}/users/${user.uid}/state/mealPlan`); try { await setDoc(mealPlanRef, { ...mealPlan, [day]: planItem }, { merge: true }); if (planItem && planItem.recipe.id !== 'leftovers') { showNotification(`${planItem.recipe.name} er tilføjet til madplanen for ${day}.`); } } catch (e) { console.error("Error updating meal plan:", e); setAppError("Kunne ikke opdatere madplan."); } setMealPlanModal({ isOpen: false, recipe: null }); };
     const handleAddMealPlanToShoppingList = () => { const allIngredients = Object.values(mealPlan).filter(planItem => planItem && planItem.recipe.id !== 'leftovers').flatMap(planItem => { const originalServings = planItem.recipe.servings || 1; const desiredServings = planItem.servings; const scalingFactor = desiredServings / originalServings; return planItem.recipe.ingredients.map(ing => ({ ...ing, quantity: (parseFloat(ing.quantity) * scalingFactor).toString() })); }); if (allIngredients.length === 0) { showNotification("Madplanen er tom eller indeholder kun rester."); return; } handleAddItemsToShoppingList(allIngredients); };
     const expiringItems = useMemo(() => { const today = new Date(); const sevenDaysFromNow = new Date(); sevenDaysFromNow.setDate(today.getDate() + 7); return items.flatMap(item => { const catalogItem = catalog.find(c => c.id === item.catalogId); return item.batches.filter(batch => { if (!batch.expiryDate) return false; const expiryDate = new Date(batch.expiryDate); return expiryDate >= today && expiryDate <= sevenDaysFromNow; }).map(batch => ({ ...item, catalogItem, batch: batch })) }).sort((a, b) => new Date(a.batch.expiryDate) - new Date(b.batch.expiryDate)); }, [items, catalog]);
     const lowStockItems = useMemo(() => { return catalog.map(catalogItem => { const inventoryItem = items.find(i => i.catalogId === catalogItem.id); const totalQuantity = inventoryItem ? inventoryItem.batches.reduce((sum, b) => sum + b.quantityInBase, 0) : 0; return { ...catalogItem, totalQuantity }; }).filter(item => item.minStock > 0 && item.totalQuantity < item.minStock); }, [items, catalog]);
 
     // --- UI Rendering ---
-    if (firebaseError) {
+    if (appError) {
         return (
             <Container className="d-flex vh-100 justify-content-center align-items-center">
                 <Alert variant="danger">
-                    <Alert.Heading>Konfigurationsfejl</Alert.Heading>
-                    <p>{firebaseError}</p>
+                    <Alert.Heading>Der opstod en fejl!</Alert.Heading>
+                    <p>{appError}</p>
                 </Alert>
             </Container>
         );
     }
 
-    if (!user) {
-        return <LoginScreen onLogin={handleLogin} loginError={loginError} setLoginError={setLoginError} />;
-    }
-
     if (isLoading) { 
         return <div className="d-flex justify-content-center align-items-center vh-100 fs-4 font-heading" style={{color: '#365314'}}>Indlæser data...</div>; 
+    }
+
+    if (!user) {
+        return <LoginScreen onLogin={handleLogin} loginError={loginError} setLoginError={setLoginError} />;
     }
     
     const renderContent = () => {
@@ -521,7 +556,7 @@ export default function App() {
                 </header>
                 
                 {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
-                {error && <Alert variant="danger" style={{position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 1050}} onClose={() => setError('')} dismissible>{error}</Alert>}
+                {appError && <Alert variant="danger" style={{position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 1050}} onClose={() => setAppError('')} dismissible>{appError}</Alert>}
                 
                 {renderContent()}
 
@@ -539,6 +574,7 @@ export default function App() {
 }
 
 // --- Side-komponenter (Bootstrap Version) ---
+// Disse komponenter er uændrede, da fejlen lå i hoved-komponenten.
 function HomeView({ setView, shoppingList, setShoppingList, cartItems, expiringItems, lowStockItems, onRemoveFromCart, onClearCart, onCheckout, onConfirmShoppingList, onSetExpiringItemDetails, mealPlan, onUpdateMealPlan, onAddMealPlanToShoppingList, catalog, onOpenCatalogCreation }) {
     const [activeTab, setActiveTab] = useState('mealPlan');
     
