@@ -2,7 +2,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 // --- Firebase Imports ---
+// Vi tilføjer de nødvendige auth-funktioner
 import { initializeApp } from "firebase/app";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, where, getDocs, arrayUnion, setDoc } from "firebase/firestore";
 
 // --- React-Bootstrap Imports ---
@@ -21,8 +23,7 @@ import Image from 'react-bootstrap/Image';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import InputGroup from 'react-bootstrap/InputGroup';
 
-// --- Ikoner (SVG-komponenter) ---
-// Note: Alle ikoner ser ud til at være i brug, så ingen er fjernet.
+// --- Ikoner (SVG-komponenter) - Uændret ---
 const TrashIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 const EditIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
 const PlusCircleIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>;
@@ -69,29 +70,8 @@ const unitConversionMap = { g: { base: 'g', factor: 1 }, kg: { base: 'g', factor
 function convertToUnit(quantity, unit, catalogItem) { if (catalogItem && catalogItem.customConversions) { const customRule = catalogItem.customConversions.find(c => c.fromUnit.toLowerCase() === unit.toLowerCase()); if (customRule) { return { quantityInBase: quantity * customRule.amount, baseUnit: catalogItem.baseUnit }; } } const globalRule = unitConversionMap[unit.toLowerCase()]; if (globalRule) { return { quantityInBase: quantity * globalRule.factor, baseUnit: globalRule.base }; } return { quantityInBase: quantity, baseUnit: unit }; }
 function formatDisplayQuantity(quantityInBase, baseUnit) { const cleanValue = (val) => parseFloat(val.toFixed(2)).toString().replace(/\.00$/, ''); if (baseUnit === 'g') { if (quantityInBase >= 1000) { return { displayQuantity: cleanValue(quantityInBase / 1000), displayUnit: 'kg' }; } return { displayQuantity: cleanValue(quantityInBase), displayUnit: 'g' }; } if (baseUnit === 'ml') { if (quantityInBase >= 1000) { return { displayQuantity: cleanValue(quantityInBase / 1000), displayUnit: 'L' }; } if (quantityInBase >= 100) { return { displayQuantity: cleanValue(quantityInBase / 100), displayUnit: 'dl' }; } return { displayQuantity: cleanValue(quantityInBase), displayUnit: 'ml' }; } return { displayQuantity: cleanValue(quantityInBase), displayUnit: baseUnit }; }
 
-// --- Login Skærm (PIN-kode version) ---
-function LoginScreen({ onLogin, setLoginError, loginError }) {
-    const [showPinModal, setShowPinModal] = useState(false);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [pin, setPin] = useState('');
-
-    const handleUserSelect = (user) => {
-        setSelectedUser(user);
-        setShowPinModal(true);
-        setLoginError(''); // Nulstil fejl ved nyt forsøg
-    };
-
-    const handlePinSubmit = (e) => {
-        e.preventDefault();
-        onLogin(selectedUser, pin);
-    };
-
-    const handleCloseModal = () => {
-        setShowPinModal(false);
-        setPin('');
-        setLoginError('');
-    }
-
+// --- Login Skærm (Nu kun et profilvalg) ---
+function LoginScreen({ onProfileSelect }) {
     const profiles = [
         { name: 'Frederikke', uid: 'frederikke-123' },
         { name: 'Christopher', uid: 'christopher-456' }
@@ -104,7 +84,12 @@ function LoginScreen({ onLogin, setLoginError, loginError }) {
                 <Row>
                     {profiles.map(profile => (
                         <Col key={profile.uid} md={6}>
-                            <Card className="text-center p-3 interactive-card" role="button" onClick={() => handleUserSelect(profile)} style={{ backgroundColor: '#FFFCF0' }}>
+                            <Card 
+                                className="text-center p-3 interactive-card" 
+                                role="button" 
+                                onClick={() => onProfileSelect(profile)} 
+                                style={{ backgroundColor: '#FFFCF0' }}
+                            >
                                 <Card.Body>
                                     <UserIcon className="text-lime-700" style={{width: 60, height: 60}} />
                                     <h2 className="mt-3 font-heading text-lime-800">{profile.name}</h2>
@@ -114,33 +99,6 @@ function LoginScreen({ onLogin, setLoginError, loginError }) {
                     ))}
                 </Row>
             </div>
-
-            <Modal show={showPinModal} onHide={handleCloseModal} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title className="font-heading">Hej {selectedUser?.name}!</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <p>Indtast venligst din PIN-kode for at fortsætte.</p>
-                    <Form onSubmit={handlePinSubmit}>
-                        <Form.Group>
-                            <Form.Control 
-                                type="password" 
-                                value={pin}
-                                onChange={(e) => setPin(e.target.value)}
-                                placeholder="****"
-                                autoFocus
-                                isInvalid={!!loginError}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                {loginError}
-                            </Form.Control.Feedback>
-                        </Form.Group>
-                        <Button variant="success" type="submit" className="w-100 mt-3">
-                            Log ind
-                        </Button>
-                    </Form>
-                </Modal.Body>
-            </Modal>
         </Container>
     );
 }
