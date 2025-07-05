@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "firebase": "^9.10.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1"
+  "firebase": "^9.10.0",
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  "react-scripts": "5.0.1",
+  "bootstrap": "^5.3.3",
+  "react-bootstrap": "^2.10.2"
+},
   },
   "scripts": {
     "start": "react-scripts start",
