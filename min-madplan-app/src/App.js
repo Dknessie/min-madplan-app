@@ -49,7 +49,7 @@ const InfoIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" widt
 const PlusIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 const StarIcon = ({ className, isFavorite }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavorite ? "#ffc107" : "none"} stroke="#ffc107" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
 const SearchIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
-const XIcon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+const ChevronLeftIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"></polyline></svg>;
 const ChevronRightIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"></polyline></svg>;
 const PackagePlusIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 16h6v-2h-6v-2h6V8h-6V6h6V4h-6"/><path d="M12 12H9v3H6v3h3v3h3v-3h3v-3h-3z"/><path d="M2.92 8.42A2 2 0 0 0 2 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-.92-1.58"/><path d="M12 12v10"/><path d="m14 2-8 6"/><path d="m2 10 10-7 10 7"/></svg>;
 const LogOutIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
@@ -812,7 +812,7 @@ function CookbookView({ setView, recipes, catalog, availableItems, onEditRecipeR
     );
 }
 
-function RecipeCard({ recipe, onEditRecipe, onKitchenTableRequest, onShowAddToShoppingListModal, onAddToMealPlanRequest, onToggleFavorite, onShowDetails }) {
+function RecipeCard({ recipe, onEditRecipe, onShowAddToShoppingListModal, onAddToMealPlanRequest, onToggleFavorite, onShowDetails }) {
     return (
         <Card className="h-100 recipe-card" role="button" onClick={onShowDetails}>
             <div className="position-relative">
@@ -833,7 +833,7 @@ function RecipeCard({ recipe, onEditRecipe, onKitchenTableRequest, onShowAddToSh
                 <div className="d-grid gap-2 mt-3">
                      <Button variant="outline-success" size="sm" onClick={(e) => {e.stopPropagation(); onAddToMealPlanRequest(recipe)}}>Føj til Madplan</Button>
                      <Button variant="outline-info" size="sm" onClick={(e) => {e.stopPropagation(); onShowAddToShoppingListModal()}}>Tilføj til Indkøb</Button>
-                     <Button variant="outline-secondary" size="sm" onClick={(e) => {e.stopPropagation(); onEditRecipe()}}>Rediger</Button>
+                     <Button variant="outline-secondary" size="sm" onClick={(e) => {e.stopPropagation(); onEditRecipe()}}><EditIcon className="me-1" /> Rediger</Button>
                 </div>
             </Card.Body>
         </Card>
